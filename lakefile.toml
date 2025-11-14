@@ -1,0 +1,10 @@
+name = "pizza"
+version = "0.1.0"
+defaultTargets = ["pizza"]
+
+[[lean_lib]]
+name = "Pizza"
+
+[[lean_exe]]
+name = "pizza"
+root = "Main"
