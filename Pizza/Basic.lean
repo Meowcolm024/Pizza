@@ -1,9 +1,9 @@
-import Pizza.Index
+import Pizza.Language
 import Pizza.Parser
 
-def perens (op : Char) : Option (Token Char → Bool) :=
+def perens (op : Char) : Option (Char → Bool) :=
   match op with
-  | '(' => some (λ r => match r with | .op ')' => true | _ => false)
+  | '(' => some (λ r => r == ')')
   | _   => none
 
 def infixOp (op : Char) : Option (Nat × Nat) :=
@@ -13,21 +13,33 @@ def infixOp (op : Char) : Option (Nat × Nat) :=
   | '.'       => some (10, 9)
   | _         => none
 
+def prefixOp (op : Char) : Option Nat :=
+  match op with
+  | '+' | '-' => some 5
+  | _         => none
+
+def postfixOp (op : Char) : Option Nat :=
+  match op with
+  | '!' => some 7
+  | _   => none
+
 def mathLang : Language Char :=
-  .mk perens (λ _ => .none) infixOp (λ _ => .none)
+  .mk perens prefixOp infixOp postfixOp
 
 def tokenize (s : String) : Array (Token Char) :=
   let rec go (cs : List Char) : List (Token Char) :=
     match cs with
     | []    => []
+    | '(' :: cs => (.paren '(') :: go cs
+    | ')' :: cs => (.paren ')') :: go cs
     | c::cs => if c.isWhitespace
       then go cs
       else (if c.isAlphanum then .atom c else .op c) :: go cs
   .mk (go s.toList)
 
-def parse (s : String) : ParseResult Char (SExp Char) :=
+def parse (s : String) : ParseResult (Token Char) (SExp Char) :=
   let tokens := tokenize s
   let lexer := Lexer.mk (.mk (n := tokens.size) tokens (by omega))
   mathLang.mkParser.run lexer
 
-#eval parse "1 * (2 + 3) - 4.5"
+#eval parse "- 1 * (2! + 3) - 4.5"
