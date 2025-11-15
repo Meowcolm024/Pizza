@@ -2,6 +2,20 @@
 
 Pizza is a total pratt parser in Lean 4
 
+## Building and running
+
+To build the project:
+
+```sh
+$ lake build
+```
+
+To run the example
+
+```sh
+$ lake exec pizza
+```
+
 ## References
 
 - [agdarsec - Total Parser Combinators](https://gallais.github.io/pdf/agdarsec18.pdf)

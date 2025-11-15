@@ -1,4 +1,4 @@
-import Pizza
+import Pizza.Example
 
 def main : IO Unit := do
   let stdin <- IO.getStdin
@@ -6,6 +6,6 @@ def main : IO Unit := do
   while true do
     IO.print "> "
     let s <- stdin.getLine
-    match parse s with
-    | .ok r      => IO.println s!"Parse result: {r}"
+    match Example.parse s with
+    | .ok (s, r) => IO.println s!"Parse result: {s}\nRemaining: {r}"
     | .error err => IO.println s!"{err.msg}"

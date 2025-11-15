@@ -20,8 +20,8 @@ def ap {α β} (f :  ⟦ Box (α —→ β) ⟧) : ⟦ Box α —→ Box β ⟧ 
   λ b => .mk (λ ev => f.call ev (b.call ev))
 
 def fix {α} (f :  ⟦ Box α —→ α ⟧) :  ⟦ α ⟧ :=
-  let rec go (f :  ⟦ Box α —→ α ⟧) :  ⟦ Box α ⟧ := λ {n} =>
-    match n with
+  let rec go (f :  ⟦ Box α —→ α ⟧) :  ⟦ Box α ⟧ :=
+  λ {n} => match n with
     | 0     => .mk (λ _ => by contradiction)
     | n + 1 => .mk (λ _ => f (go f))
   extract (go f)

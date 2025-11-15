@@ -13,6 +13,8 @@ structure Success (τ α : Type) (n : Nat) where
   small : size < n
   rest  : Lexer τ size
 
+deriving instance Repr for Success
+
 structure ParseError (τ : Type) where
   mk  ::
   msg : String
@@ -30,7 +32,7 @@ structure Parser (τ α : Type) (n : Nat) where
 
 def Lexer.nextTokenOpt {n τ} (lexer : Lexer τ n) : Option (Success τ τ n) :=
   match n, lexer.tokens with
-  | 0    , _  => .none
+  | 0    , _  => none
   | n + 1, ts => return .mk ts.head (by omega) (.mk ts.tail)
 
 def Lexer.nextToken {n τ} (lexer : Lexer τ n) : ParseResult τ (Success τ τ n) :=
@@ -38,5 +40,5 @@ def Lexer.nextToken {n τ} (lexer : Lexer τ n) : ParseResult τ (Success τ τ 
   | .some t => .ok t
   | .none   => .error (.mk "unexpected eof" lexer.tokens.toList)
 
-def Parser.run {n τ α} (lexer : Lexer τ n) (parser : Parser τ α n) : ParseResult τ α :=
-  (parser.parse (by omega) lexer 0).map (λ r => r.value)
+def Parser.run {n τ α} (lexer : Lexer τ n) (parser : Parser τ α n) : ParseResult τ (Success τ α n) :=
+  parser.parse (by omega) lexer 0

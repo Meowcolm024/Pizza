@@ -1,17 +1,17 @@
 import Pizza.Index
 import Pizza.Parser
 
+namespace Language
+
 inductive Token (τ : Type) where
-| atom  : τ → Token τ
-| op    : τ → Token τ
-| paren : τ → Token τ
+| atom : τ → Token τ
+| op   : τ → Token τ
 
 deriving instance Repr, Inhabited, DecidableEq for Token
 
 instance {τ} [ToString τ] : ToString (Token τ) where
   toString
   | .atom a  => s!"{a}"
-  | .paren p => s!"{p}"
   | .op op   => s!"{op}"
 
 inductive SExp (τ : Type) : Type where
@@ -43,8 +43,8 @@ private def asParseResult {α τ} (opt : Option α) (msg : String) (rem : List �
 
 private def matchParen (f : τ → Bool) (t : Token τ) : Bool :=
   match t with
-  | .paren p => f p
-  | _        => false
+  | .op p => f p
+  | _     => false
 
 notation auxres "aux" alt =>
   match auxres with
@@ -70,8 +70,9 @@ def Language.mkParser {τ} [ToString τ] (lang : Language τ) : ⟦ Parser (Toke
             let res := SExp.cons op [lhs, rhs]
             let auxres <- p.parseAux (by omega) lexer res mbp
             return return auxres aux .mk res (by omega) lexer
+        -- note that we do not consume the operator token when there is no match
+        -- so the parser terminates here, leaving the remaining tokens not consumed
         return none
-      | .paren _ => return none
       | _ => .error (.mk s!"failed to parse {value}" lexer.tokens.toList)
     return none
   )
@@ -82,19 +83,17 @@ def Language.mkParser {τ} [ToString τ] (lang : Language τ) : ⟦ Parser (Toke
     | .atom a =>
       let auxres <- p.parseAux (by omega) lexer (.atom a) mbp
       return auxres aux Success.mk (.atom a) (by omega) lexer
-    | .paren lpr =>
-      let matched <- asParseResult (lang.parens lpr) s!"failed to parse parens {lpr}" lexer.tokens.toList
-      let (Success.mk lhs small lexer) <- p.parse (by omega) lexer 0
-      let (Success.mk rpr small lexer) <- lexer.nextToken
-      if matchParen matched rpr then
-        let auxres <- p.parseAux (by omega) lexer lhs mbp
-        return auxres aux .mk lhs  (by omega) lexer
-      else
-        .error (.mk s!"paren {lpr} is not closed by {rpr}" lexer.tokens.toList)
     | .op op =>
-      let rbp <- asParseResult (lang.prefixOp op) s!"failed to parse prefix {op}" lexer.tokens.toList
-      let (Success.mk lhs small lexer) <- p.parse (by omega) lexer rbp
-      let res := .cons op [lhs]
-      let auxres <- p.parseAux (by omega) lexer res mbp
-      return auxres aux .mk res (by omega) lexer
+      if let .some matched := lang.parens op then
+        let (Success.mk lhs small lexer) <- p.parse (by omega) lexer 0
+        let (Success.mk rpr small lexer) <- lexer.nextToken
+        if matchParen matched rpr then
+          let auxres <- p.parseAux (by omega) lexer lhs mbp
+          return auxres aux .mk lhs (by omega) lexer
+      if let .some rbp := lang.prefixOp op then
+        let (Success.mk lhs small lexer) <- p.parse (by omega) lexer rbp
+        let res := .cons op [lhs]
+        let auxres <- p.parseAux (by omega) lexer res mbp
+        return auxres aux .mk res (by omega) lexer
+      .error (.mk s!"failed to parse {op}" lexer.tokens.toList)
   ))

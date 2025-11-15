@@ -1,6 +1,10 @@
 import Pizza.Language
 import Pizza.Parser
 
+namespace Example
+
+open Language
+
 def perens (op : Char) : Option (Char → Bool) :=
   match op with
   | '(' => some (λ r => r == ')')
@@ -30,16 +34,15 @@ def tokenize (s : String) : Array (Token Char) :=
   let rec go (cs : List Char) : List (Token Char) :=
     match cs with
     | []    => []
-    | '(' :: cs => (.paren '(') :: go cs
-    | ')' :: cs => (.paren ')') :: go cs
     | c::cs => if c.isWhitespace
       then go cs
       else (if c.isAlphanum then .atom c else .op c) :: go cs
   .mk (go s.toList)
 
-def parse (s : String) : ParseResult (Token Char) (SExp Char) :=
+def parse (s : String) : ParseResult (Token Char) (SExp Char × List (Token Char)) :=
   let tokens := tokenize s
   let lexer := Lexer.mk (.mk (n := tokens.size) tokens (by omega))
-  mathLang.mkParser.run lexer
+  (mathLang.mkParser.run lexer).map (λ r => (r.value, r.rest.tokens.toList))
 
 #eval parse "- 1 * (2! + 3) - 4.5"
+#eval parse "((1))"
