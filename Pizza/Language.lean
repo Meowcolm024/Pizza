@@ -11,8 +11,8 @@ deriving instance Repr, Inhabited, DecidableEq for Token
 
 instance {τ} [ToString τ] : ToString (Token τ) where
   toString
-  | .atom a  => s!"{a}"
-  | .op op   => s!"{op}"
+  | .atom a => s!"{a}"
+  | .op op  => s!"{op}"
 
 inductive SExp (τ : Type) : Type where
 | atom : τ → SExp τ
@@ -32,22 +32,22 @@ instance {τ} [ToString τ] : ToString (SExp τ) where
 structure Language (τ : Type) where
   mk        ::
   -- parens: closing paren
-  parens    : τ → Option (τ → Bool)
+  parens    : τ → Option τ
   -- prefix: rbp, optionally closing mixfix operator
-  prefixOp  : τ → Option (Nat × Option (τ → Bool))
+  prefixOp  : τ → Option (Nat × Option τ)
   -- infix: lbp, rbp, ...
-  infixeOp  : τ → Option (Nat × Nat × Option (τ → Bool))
+  infixeOp  : τ → Option (Nat × Nat × Option τ)
   --- postfix: lbp, ...
-  postfixOp : τ → Option (Nat × Option (τ → Bool))
+  postfixOp : τ → Option (Nat × Option τ)
 
 private def asParseResult {α τ} (opt : Option α) (msg : String) (rem : List τ) : ParseResult τ α :=
   match opt with
   | .some x => .ok x
   | .none   => .error (.mk msg rem)
 
-private def matchClosing (f : τ → Bool) (t : Token τ) : Bool :=
+private def matchClosing {τ} [BEq τ] (c : τ) (t : Token τ) : Bool :=
   match t with
-  | .op p => f p
+  | .op p => c == p
   | _     => false
 
 notation auxres "aux" alt =>
@@ -55,7 +55,7 @@ notation auxres "aux" alt =>
   | some (Success.mk r s t) => Success.mk r (by omega) t
   | none => alt
 
-def Language.mkParser {τ} [ToString τ] (lang : Language τ) : ⟦ Parser (Token τ) (SExp τ) ⟧ :=
+def Language.mkParser {τ} [ToString τ] [BEq τ] (lang : Language τ) : ⟦ Parser (Token τ) (SExp τ) ⟧ :=
   fix (λ rec => .mk
   (λ ev lexer lhs mbp => do
     if let some (Success.mk value small lexer) := lexer.nextTokenOpt then
@@ -78,7 +78,7 @@ def Language.mkParser {τ} [ToString τ] (lang : Language τ) : ⟦ Parser (Toke
           if lbp < mbp then return none
           else
             if let some cl := cl then
-              let Success.mk mhs small lexer <- p.parse (by omega) lexer rbp
+              let Success.mk mhs small lexer <- p.parse (by omega) lexer 0
               let Success.mk rop small lexer <- lexer.nextToken
               if matchClosing cl rop then
                 let Success.mk rhs small lexer <- p.parse (by omega) lexer rbp

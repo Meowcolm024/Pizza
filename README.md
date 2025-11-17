@@ -10,7 +10,7 @@ To build the project:
 $ lake build
 ```
 
-To run the example
+To run the example:
 
 ```sh
 $ lake exec pizza

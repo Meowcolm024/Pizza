@@ -5,30 +5,30 @@ namespace Example
 
 open Language
 
-def perens (op : Char) : Option (Char → Bool) :=
+def perens (op : Char) : Option Char :=
   match op with
-  | '(' => some (λ r => r == ')')
+  | '(' => some ')'
   | _   => none
 
-def infixOp (op : Char) : Option (Nat × Nat × Option (Char → Bool)) :=
+def infixOp (op : Char) : Option (Nat × Nat × Option Char) :=
   match op with
   | '='       => some (3, 2, none)
-  | '?'       => some (5, 4, some λ c => c == ':')
+  | '?'       => some (5, 4, some ':')
   | '+' | '-' => some (6, 7, none)
   | '*' | '/' => some (8, 9, none)
   | '.'       => some (15, 14, none)
   | _         => none
 
-def prefixOp (op : Char) : Option (Nat × Option (Char → Bool)) :=
+def prefixOp (op : Char) : Option (Nat × Option Char) :=
   match op with
-  | 'λ'       => some (2, some λ c => c == '→')
+  | 'λ'       => some (2, some '→')
   | '+' | '-' => some (10, none)
   | _         => none
 
-def postfixOp (op : Char) : Option (Nat × Option (Char → Bool)) :=
+def postfixOp (op : Char) : Option (Nat × Option Char) :=
   match op with
   | '!' => some (12 , none)
-  | '[' => some (12 , some λ c => c == ']')
+  | '[' => some (12 , some ']')
   | _   => none
 
 def exampleLang : Language Char :=
@@ -50,4 +50,4 @@ def parse (s : String) : ParseResult (Token Char) (SExp Char × List (Token Char
 
 #eval parse "- 1 * (2! + 3) - 4.5"
 #eval parse "((1))"
-#eval parse "(λ 2 = 3 → 1 + (2 ? 3[4.5] : 6!)) * (4 + 5)"
+#eval parse "(λ x → 1 + (x ? 3.4[4] : 6!)) * (4 + 5)"
